@@ -46,24 +46,31 @@ except:
 
 # Step 5: Scrape Tweets
 def get_tweets():
-    """Extracts tweet text from visible page."""
+    """Extracts tweet text from the current page, avoiding stale elements."""
     tweets = driver.find_elements(By.XPATH, "//article[@data-testid='tweet']")
-    tweet_texts = [tweet.text for tweet in tweets if tweet.text]
+    tweet_texts = []
+    
+    for tweet in tweets:
+        try:
+            tweet_texts.append(tweet.text)
+        except:
+            continue  # If an element is stale, skip it
+    
     return tweet_texts
 
 # Collect Tweets by Scrolling Down
 all_tweets = set()
-for _ in range(10):  # Scroll 10 times
-    tweets = get_tweets()
-    all_tweets.update(tweets)
 
-    # Scroll down
+for _ in range(500):  # Scroll 10 times
     driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-    time.sleep(3)
+    time.sleep(3)  # Allow tweets to load
+
+    tweets = get_tweets()  # Re-fetch tweets after scrolling
+    all_tweets.update(tweets)  # Store unique tweets
 
 # Step 6: Save Tweets to CSV
 df = pd.DataFrame(list(all_tweets), columns=["Tweet Text"])
-df.to_csv("election2024_tweets.csv", index=False)
+df.to_csv("election2024_tweets_02.csv", index=False)
 print(f"Scraped {len(all_tweets)} tweets and saved them successfully.")
 
 # Close Browser
